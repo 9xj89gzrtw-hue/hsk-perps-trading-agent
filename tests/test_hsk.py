@@ -26,6 +26,7 @@ from agent.hsk import (
     encode_is_actionable,
     encode_publish,
     encode_revoke,
+    gas_price,
     signal_key,
 )
 
@@ -244,29 +245,68 @@ class DeployGateTest(unittest.TestCase):
 
 
 class FakeRpc:
-    def __init__(self, balance_wei, gas_price_wei):
+    def __init__(self, balance_wei, gas_price_wei, base_fee_wei=None):
         self._balance = balance_wei
         self._price = gas_price_wei
+        self._base = gas_price_wei if base_fee_wei is None else base_fee_wei
 
     def gas_price(self):
         return self._price
+
+    def base_fee(self):
+        return self._base
 
     def balance(self, address):
         return self._balance
 
 
 class DeploymentGateLiveLogicTest(unittest.TestCase):
-    def test_prices_the_fee_at_twice_the_base_fee(self):
-        rpc = FakeRpc(balance_wei=1000, gas_price_wei=2)
-        gate = deployment_gate(rpc, "0x" + "00" * 20, gas_estimate=100)
-        self.assertEqual(gate.needed_wei, 2 * 2 * 100)
+    def test_prices_at_base_plus_tip_with_one_margin(self):
+        # 2 wei base + 1 wei tip = 3 wei, 100 gas, 1.25x margin = 375 wei.
+        rpc = FakeRpc(balance_wei=1000, gas_price_wei=99, base_fee_wei=2)
+        gate = deployment_gate(rpc, "0x" + "00" * 20, gas_estimate=100, priority_fee_wei=1)
+        self.assertEqual(gate.needed_wei, 375)
+        self.assertEqual(gate.gas_price_wei, 3)
+        self.assertEqual(gate.base_fee_wei, 2)
         self.assertTrue(gate.ready)
+
+    def test_an_explicit_gas_price_wins_over_the_base_fee(self):
+        rpc = FakeRpc(balance_wei=10**18, gas_price_wei=500 * 10**9, base_fee_wei=500 * 10**9)
+        gate = deployment_gate(rpc, "0x" + "00" * 20, gas_estimate=1000, gas_price_wei=50)
+        self.assertEqual(gate.gas_price_wei, 50)
+        self.assertEqual(gate.needed_wei, 1000 * 50 * 12_500 // 10_000)
+
+    def test_pre_london_node_falls_back_to_its_quote(self):
+        rpc = FakeRpc(balance_wei=10**18, gas_price_wei=7, base_fee_wei=0)
+        gate = deployment_gate(rpc, "0x" + "00" * 20, gas_estimate=100, priority_fee_wei=1)
+        self.assertEqual(gate.gas_price_wei, 7)
+        self.assertEqual(gate.base_fee_wei, 0)
 
     def test_the_real_account_with_zero_gas_is_blocked(self):
         rpc = FakeRpc(balance_wei=0, gas_price_wei=10**9)
         gate = deployment_gate(rpc, "0x72Aa6edDE71B94f6b99c8e52EdC02B5C75F74d1a")
         self.assertFalse(gate.ready)
         self.assertIn("empty account", gate.reason)
+
+    def test_a_nonzero_balance_can_still_be_short(self):
+        rpc = FakeRpc(balance_wei=10, gas_price_wei=10**9)
+        gate = deployment_gate(rpc, "0x" + "00" * 20, gas_estimate=100)
+        self.assertFalse(gate.ready)
+        self.assertIn("underfunded", gate.reason)
+        self.assertGreater(gate.shortfall_native, 0)
+
+
+class GasPriceTest(unittest.TestCase):
+    def test_negative_override_is_rejected(self):
+        rpc = FakeRpc(balance_wei=0, gas_price_wei=1)
+        with self.assertRaises(ValueError):
+            gas_price(rpc, override_wei=-1)
+
+    def test_tip_is_added_only_to_the_base_fee(self):
+        rpc = FakeRpc(balance_wei=0, gas_price_wei=10**12, base_fee_wei=500 * 10**9)
+        price, base = gas_price(rpc, priority_fee_wei=10**9)
+        self.assertEqual(base, 500 * 10**9)
+        self.assertEqual(price, 501 * 10**9)
 
 
 class RpcErrorTest(unittest.TestCase):

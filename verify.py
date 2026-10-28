@@ -13,6 +13,7 @@ fail the run: an unfunded testnet account is the expected state.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 import time
 import unittest
@@ -31,6 +32,7 @@ from agent.precheck import precheck  # noqa: E402
 from agent.strategy import best, rank  # noqa: E402
 
 FIXTURE = ROOT / "fixtures" / "markets_latest.json"
+DEPLOYMENT = ROOT / "deployments" / "testnet.json"
 GREEN, RED, AMBER, DIM, RESET = "\033[32m", "\033[31m", "\033[33m", "\033[2m", "\033[0m"
 
 
@@ -58,8 +60,43 @@ def run_suite() -> tuple[bool, int, int]:
     return result.wasSuccessful(), total, failures
 
 
+def check_deployment(offline: bool) -> bool:
+    """The testnet deploy is a claim; the record must be well-formed and readable."""
+    print("\n3. testnet deployment")
+    try:
+        record = json.loads(DEPLOYMENT.read_text())
+        assert record["chainId"] == 133, f"chainId {record['chainId']}"
+        assert len(record["address"]) == 42 and record["address"].startswith("0x")
+        assert record["deploy"]["status"] == 1 and record["publish"]["status"] == 1
+        assert len(record["deploy"]["tx"]) == 66 and len(record["publish"]["tx"]) == 66
+    except Exception as exc:  # noqa: BLE001
+        bad("deployments/testnet.json is unusable", f"{type(exc).__name__}: {exc}")
+        return False
+    ok(
+        f"{record['contract']} {record['address'][:10]}…{record['address'][-4:]}",
+        f"chain {record['chainId']} · deploy {record['deploy']['tx'][:14]}…",
+    )
+    if offline:
+        print("  live bytecode check skipped (--offline)")
+        return True
+    try:
+        from agent import hsk
+        from agent.keccak import selector
+
+        rpc = hsk.Rpc(hsk.HSK_TESTNET.rpc, timeout=12, retries=1)
+        code = rpc._post("eth_getCode", [record["address"], "latest"])
+        assert isinstance(code, str) and code not in ("0x", "0x0", ""), "no bytecode at the recorded address"
+        publisher = "0x" + rpc.call(record["address"], "0x" + selector("publisher()").hex())[-40:]
+        assert publisher.lower() == record["publisher"].lower(), f"publisher() is {publisher}"
+        ok("bytecode + publisher()", f"{len(code) // 2 - 1:,} bytes · publisher matches")
+        return True
+    except Exception as exc:  # noqa: BLE001
+        bad("testnet read failed", f"{type(exc).__name__}: {exc}")
+        return False
+
+
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="verify the dreamDEX perps agent")
+    ap = argparse.ArgumentParser(description="verify the HSK perps trading agent")
     ap.add_argument("--offline", action="store_true", help="skip every network call")
     ap.add_argument("--account", default=None, help="address for the SDK precheck")
     ap.add_argument("--capital", default="100")
@@ -74,8 +111,8 @@ def main(argv: list[str] | None = None) -> int:
     leverage = Decimal(args.leverage)
     failed = False
 
-    print(f"\n\033[1mdreamDEX perps agent · verify\033[0m  {datetime.now(timezone.utc):%Y-%m-%dT%H:%M:%SZ}")
-    print(f"{DIM}chain 50383 · python {sys.version.split()[0]} · {ROOT}{RESET}\n")
+    print(f"\n\033[1mHSK Perps Trading Agent · verify\033[0m  {datetime.now(timezone.utc):%Y-%m-%dT%H:%M:%SZ}")
+    print(f"{DIM}perp venue chain 177 · SignalAdapter on testnet 133 · python {sys.version.split()[0]} · {ROOT}{RESET}\n")
 
     print("1. unit suite")
     passed, total, failures = run_suite()
@@ -97,11 +134,14 @@ def main(argv: list[str] | None = None) -> int:
         failed = True
         bad("fixture is unusable", str(exc))
 
+    if not check_deployment(args.offline):
+        failed = True
+
     live = None
     if args.offline:
-        print("\n3. live indexer\n  skipped (--offline)")
+        print("\n4. live indexer\n  skipped (--offline)")
     else:
-        print("\n3. live indexer")
+        print("\n4. live indexer")
         try:
             live = fetch_snapshot()
             assert live.perps, "indexer returned no perp markets"
@@ -116,7 +156,7 @@ def main(argv: list[str] | None = None) -> int:
     snapshot = live or snap
     plans = rank(snapshot, capital, leverage)
     plan = plans[0] if plans else None
-    print("\n4. plan")
+    print("\n5. plan")
     if plan is None:
         failed = True
         bad("no perp/spot pair to trade")
@@ -125,7 +165,7 @@ def main(argv: list[str] | None = None) -> int:
         ok(f"{plan.pair.name} {state}", f"APR {plan.apr_percent:+.2f}% · ${plan.daily_carry:.3f}/day · liq buffer {plan.liq_buffer * 100:.2f}%")
 
     if args.account and plan is not None:
-        print("\n5. SDK precheck")
+        print("\n6. SDK precheck")
         market = snapshot.perp_by_display(args.market)
         result = precheck(market, args.account, market.mark, plan.perp_margin, leverage, False)
         if result.source != "sdk":
@@ -135,9 +175,9 @@ def main(argv: list[str] | None = None) -> int:
         else:
             warn("venue says not placeable", f"max {result.max_quantity} · limitedBy {result.limited_by}")
     else:
-        print("\n5. SDK precheck\n  skipped (pass --account to run it)")
+        print("\n6. SDK precheck\n  skipped (pass --account to run it)")
 
-    print("\n6. card")
+    print("\n7. card")
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     top = sorted(snapshot.perps, key=lambda m: -abs(m.funding_rate_raw))

@@ -51,7 +51,7 @@
 <line x1="40" y1="492" x2="1160" y2="492" stroke="#1e2a38"/>
 <text x="40" y="526" fill="#8494a8" font-size="13">source  indexer hideki-dev.smk.somnia.host · 21 perp markets · 3 spot markets</text>
 <text x="40" y="552" fill="#8494a8" font-size="13">safety  getMaxPerpOrderSize precheck · revert 0xd48c4403 benign · 0x3a23d825 halts sizing</text>
-<text x="40" y="600" fill="#39d98a" font-size="18" font-weight="700">201/201 tests green</text>
+<text x="40" y="600" fill="#39d98a" font-size="18" font-weight="700">264/264 tests green</text>
 <text x="220" y="600" fill="#8494a8" font-size="14">verify.py</text>
 <text x="1160" y="600" fill="#8494a8" font-size="13" text-anchor="end">github.com/9xj89gzrtw-hue/dreamdex-perps-agent</text>
 </svg>

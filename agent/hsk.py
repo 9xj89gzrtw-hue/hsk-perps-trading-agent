@@ -141,6 +141,16 @@ class Rpc:
     def gas_price(self) -> int:
         return int(self._post("eth_gasPrice", []), 16)
 
+    def base_fee(self) -> int:
+        """The latest block's base fee, or 0 on a pre-London chain.
+
+        `eth_gasPrice` on an OP Stack chain is the node's *suggested* price, which
+        can carry a wide safety pad. The base fee is what the chain actually burns,
+        so it is the honest floor for a cost estimate.
+        """
+        block = self._post("eth_getBlockByNumber", ["latest", False]) or {}
+        return int(block.get("baseFeePerGas") or "0x0", 16)
+
     def balance(self, address: str) -> int:
         return int(self._post("eth_getBalance", [address, "latest"]), 16)
 
@@ -216,10 +226,18 @@ SIGNAL_ADAPTER_ABI = [
 ]
 
 # Gas measured for the deploy and for one publish, with headroom. The deploy number
-# is the cost of the contract above (~1.1M) plus a margin; it is an estimate and the
-# gate below says so, rather than pretending to be a quote.
+# is only a fallback: `scripts/hsk_deploy.py` asks the node for `eth_estimateGas` on
+# the real bytecode and uses this number only when the node cannot answer (for
+# example, because the publisher is unfunded and the node rejects the call).
 DEPLOY_GAS_ESTIMATE = 1_300_000
 PUBLISH_GAS_ESTIMATE = 90_000
+
+# A 1 gwei tip is enough to be included on HSK; the base fee does the rest. The
+# old gate priced the deploy at 2x `eth_gasPrice`, which on HSK's 500 gwei base
+# fee doubled an already padded number and demanded 1.3 HSK for a deploy the node
+# estimates at roughly a third of that.
+PRIORITY_FEE_WEI = 1_000_000_000
+GAS_MARGIN_BPS = 2_500  # +25% on the final cost, applied once
 
 
 def signal_key(label: str) -> bytes:
@@ -277,10 +295,17 @@ class DeployGate:
     reason: str
     balance_wei: int
     needed_wei: int
+    gas_estimate: int = DEPLOY_GAS_ESTIMATE
+    gas_price_wei: int = 0
+    base_fee_wei: int = 0
 
     @property
     def balance_native(self) -> Decimal:
         return Decimal(self.balance_wei) / WEI
+
+    @property
+    def needed_native(self) -> Decimal:
+        return Decimal(self.needed_wei) / WEI
 
     @property
     def shortfall_native(self) -> Decimal:
@@ -288,25 +313,54 @@ class DeployGate:
 
     def line(self, chain: Chain) -> str:
         if self.ready:
-            return f"ready: {self.balance_native:.6f} {chain.native} covers ~{Decimal(self.needed_wei)/WEI:.6f}"
+            return f"ready: {self.balance_native:.6f} {chain.native} covers ~{self.needed_native:.6f}"
         return (
             f"blocked: {self.balance_native:.6f} {chain.native} on {chain.name} (chain {chain.chain_id}), "
-            f"need ~{Decimal(self.needed_wei)/WEI:.6f}, short {self.shortfall_native:.6f} {chain.native}"
+            f"need ~{self.needed_native:.6f}, short {self.shortfall_native:.6f} {chain.native}"
         )
 
 
-def deployment_gate(rpc: Rpc, address: str, gas_estimate: int = DEPLOY_GAS_ESTIMATE) -> DeployGate:
+def gas_price(rpc: Rpc, priority_fee_wei: int = PRIORITY_FEE_WEI, override_wei: int | None = None) -> tuple[int, int]:
+    """Return `(price_wei, base_fee_wei)` for an EIP-1559-shaped fee.
+
+    The price is `base fee + tip`. An explicit override wins, which is what a
+    reviewer needs to answer "what would this cost at 0.05 gwei?". We do not
+    multiply the node's suggested price by two: the gate should price the chain
+    we can observe, not a chain that might be 2x more expensive later. The
+    safety margin is applied to the final cost once, in `deployment_gate`.
+    """
+    if override_wei is not None:
+        if override_wei < 0:
+            raise ValueError("gas price cannot be negative")
+        return override_wei, override_wei
+    base = rpc.base_fee()
+    if base <= 0:
+        # Pre-London chain or a node that omits the field: fall back to its quote.
+        return rpc.gas_price(), 0
+    return base + max(0, priority_fee_wei), base
+
+
+def deployment_gate(
+    rpc: Rpc,
+    address: str,
+    gas_estimate: int = DEPLOY_GAS_ESTIMATE,
+    gas_price_wei: int | None = None,
+    priority_fee_wei: int = PRIORITY_FEE_WEI,
+    margin_bps: int = GAS_MARGIN_BPS,
+) -> DeployGate:
     """Decide, before anything is signed, whether this account can pay for the deploy.
 
-    The fee is priced at 2x the current base fee because HSK, like most EVM chains,
-    can move the base fee between the estimate and the inclusion, and a deploy that
-    runs out of gas burns the fee and leaves nothing behind.
+    The cost is `gas_estimate * (base fee + tip)`, with a 1.25x margin for a base
+    fee that moves between the estimate and inclusion. The margin is explicit and
+    reported, not folded into a hardcoded token amount: the previous 1.3 HSK
+    figure was 2x the node's suggested price *and* 1.3M gas, so it read as a
+    protocol constant when it was two conservative choices multiplied together.
     """
-    price = rpc.gas_price() * 2
-    needed = price * gas_estimate
+    price, base = gas_price(rpc, priority_fee_wei=priority_fee_wei, override_wei=gas_price_wei)
+    padded = (gas_estimate * price * (10_000 + margin_bps)) // 10_000
     balance = rpc.balance(address)
     if balance == 0:
-        return DeployGate(False, "empty account: no gas token at all", balance, needed)
-    if balance < needed:
-        return DeployGate(False, "underfunded for the deploy", balance, needed)
-    return DeployGate(True, "funded", balance, needed)
+        return DeployGate(False, "empty account: no gas token at all", balance, padded, gas_estimate, price, base)
+    if balance < padded:
+        return DeployGate(False, "underfunded for the deploy", balance, padded, gas_estimate, price, base)
+    return DeployGate(True, "funded", balance, padded, gas_estimate, price, base)

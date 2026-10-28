@@ -1,0 +1,32 @@
+{
+  "network": "HSK Testnet",
+  "chainId": 133,
+  "rpc": "https://testnet.hsk.xyz",
+  "explorer": "https://testnet-explorer.hsk.xyz",
+  "contract": "SignalAdapter",
+  "address": "0x6595d7079cbdc72d52086ef7381364e23c5f00a9",
+  "publisher": "0x72Aa6edDE71B94f6b99c8e52EdC02B5C75F74d1a",
+  "deploy": {
+    "tx": "0x4bb8794d3a16e13d2c422f45da6bc6f24300ea6c5b0f9d91a43e57c5ba716332",
+    "block": 35001340,
+    "status": 1,
+    "gasUsed": 344625,
+    "feeHsk": "0.00068925"
+  },
+  "publish": {
+    "tx": "0x82c8fa93a50f55bd79a74f3f78755855175156d1b4c675f0fafde244a4c300d4",
+    "block": 35001358,
+    "status": 1,
+    "gasUsed": 90831,
+    "feeHsk": "0.000181662",
+    "key": "btc-funding",
+    "keyHex": "0x6274632d66756e64696e67000000000000000000000000000000000000000000",
+    "edgeBps": 15720,
+    "publishedAt": 1793189372,
+    "expiresAt": 1793190267,
+    "ttlSeconds": 895,
+    "actionableAtRead": true
+  },
+  "verifiedAt": "2026-10-28T14:40:00Z",
+  "note": "The published row was deliberately short-lived (895 s) so the expiry path is exercised, not merely declared. It read isActionable=true immediately after publish and reads false after expiry, which is the contract doing its job."
+}

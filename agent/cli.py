@@ -296,6 +296,76 @@ def cmd_pairs(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_chat(args: argparse.Namespace) -> int:
+    from .chat import ChatEngine, fixture_loader
+
+    if args.fixture or args.fixture_path:
+        loader = fixture_loader(args.fixture_path)
+    else:
+        loader = fetch_snapshot
+    engine = ChatEngine(loader, capital=Decimal(str(args.capital)), leverage=Decimal(str(args.leverage)))
+
+    if args.web:
+        from .webchat import serve
+
+        return serve(engine, host=args.host, port=args.port, open_browser=args.open)
+
+    if args.once:
+        reply = engine.reply(args.once)
+        print(reply.text)
+        if reply.metrics:
+            print()
+            print("  ".join(f"{label}={value}" for label, value, _ in reply.metrics))
+        if args.card:
+            _write_chat_card(engine, reply, args.card)
+        return 0 if reply.intent != "error" else 1
+
+    print(term.paint("HSK perps desk", term.BOLD) + "  ·  deterministic intents  ·  read-only")
+    print(term.paint("ask `help` for commands, `/quit` to leave", term.DIM))
+    while True:
+        try:
+            line = input("\nyou › ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            break
+        if not line:
+            continue
+        if line in {"/quit", "/exit", "quit", "exit"}:
+            break
+        if line == "/refresh":
+            engine.snapshot(refresh=True)
+            print("snapshot refreshed")
+            continue
+        if line == "/card":
+            if engine.last is None:
+                print("nothing to draw yet")
+                continue
+            _write_chat_card(engine, engine.last, None)
+            continue
+        reply = engine.reply(line)
+        print()
+        print(reply.text)
+        if reply.metrics:
+            print()
+            print(term.paint("  ".join(f"{label}={value}" for label, value, _ in reply.metrics), term.DIM))
+    return 0
+
+
+def _write_chat_card(engine, reply, target: str | None) -> None:
+    from . import chatcard
+
+    out = Path(target) if target else OUT / "chat-card.svg"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    snap = engine._snapshot
+    block = snap.block if snap else None
+    source = "indexer · live" if snap and snap.source == "live" else "fixture snapshot"
+    chatcard.write(reply, out, block=block, source=source)
+    print(f"wrote {out} ({out.stat().st_size} bytes)")
+    png = out.with_suffix(".png")
+    used = chatcard.write_png(reply, png, block=block, source=source)
+    print(f"wrote {png} ({png.stat().st_size} bytes, {used})")
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="agent", description="dreamDEX delta-neutral funding harvester")
     ap.add_argument("--fixture-path", help="read a captured snapshot instead of the live indexer")
@@ -347,6 +417,17 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--force", action="store_true")
     p.add_argument("--order-type", default="IOC", choices=["IOC", "LIMIT", "FOK", "POST_ONLY"])
     p.set_defaults(func=cmd_run)
+
+    p = sub.add_parser("chat", help="conversational desk (REPL or local web)")
+    common(p)
+    p.add_argument("--web", action="store_true", help="serve the local web desk instead of the REPL")
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=8765)
+    p.add_argument("--open", action="store_true", help="open the web desk in a browser")
+    p.add_argument("--once", default=None, help="answer one message and exit")
+    p.add_argument("--card", nargs="?", const=str(OUT / "chat-card.svg"), default=None,
+                   help="write the answer card (default out/chat-card.svg)")
+    p.set_defaults(func=cmd_chat)
     return ap
 
 
