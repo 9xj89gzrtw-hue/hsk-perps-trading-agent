@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+bridge/node_modules/
+bridge/npm-debug.log*
+
+out/runlog.jsonl
+out/last-run.json
+
+.DS_Store
+*.log
+.env
+.env.*

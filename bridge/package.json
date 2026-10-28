@@ -1,0 +1,12 @@
+{
+  "name": "dreamdex-perps-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Thin SDK bridge: the venue's own sizing and order placement.",
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@somnia-chain/markets-sdk": "0.32.1",
+    "viem": "^2.57.8"
+  }
+}

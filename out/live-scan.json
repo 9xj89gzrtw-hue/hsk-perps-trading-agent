@@ -1,0 +1,237 @@
+{
+ "at": "2026-10-28T05:47:59Z",
+ "block": 35133148,
+ "perps": [
+  {
+   "market": "LIT-PERP",
+   "mark": "3.03045890688",
+   "index": "3.033979734699",
+   "fundingRate": "100000000000000",
+   "apr": "0.1095",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "15484",
+   "basisBps": "-11.60465173426512691325336199"
+  },
+  {
+   "market": "TAO-PERP",
+   "mark": "257.35872296398",
+   "index": "257.5473670343245",
+   "fundingRate": "100000000000000",
+   "apr": "0.1095",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "196.472",
+   "basisBps": "-7.324635950145766907914929776"
+  },
+  {
+   "market": "ZRO-PERP",
+   "mark": "1.716978320518",
+   "index": "1.716490958601",
+   "fundingRate": "100000000000000",
+   "apr": "0.1095",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "18305.8",
+   "basisBps": "2.839292071757936673543188020"
+  },
+  {
+   "market": "VVV-PERP",
+   "mark": "24.681252721101",
+   "index": "24.686412136334",
+   "fundingRate": "100000000000000",
+   "apr": "0.1095",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "767.42",
+   "basisBps": "-2.089981810441485779920973436"
+  },
+  {
+   "market": "1000PEPE-PERP",
+   "mark": "0.004820862279",
+   "index": "0.004821786184",
+   "fundingRate": "100000000000000",
+   "apr": "0.1095",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "7340900",
+   "basisBps": "-1.916105287011208541801238858"
+  },
+  {
+   "market": "LINK-PERP",
+   "mark": "11.7299916343355",
+   "index": "11.7349381132935",
+   "fundingRate": "100000000000000",
+   "apr": "0.1095",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "4677.2",
+   "basisBps": "-4.215172598478862284081519290"
+  },
+  {
+   "market": "ADA-PERP",
+   "mark": "0.2061018530355",
+   "index": "0.2062017933565",
+   "fundingRate": "100000000000000",
+   "apr": "0.1095",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "142522",
+   "basisBps": "-4.846724142074471890506067380"
+  },
+  {
+   "market": "BNB-PERP",
+   "mark": "745.299919396222",
+   "index": "745.2722075369115",
+   "fundingRate": "534037569917303",
+   "apr": "0.584771139059446785",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "265.249",
+   "basisBps": "0.3718354049735243849802620671"
+  },
+  {
+   "market": "XLM-PERP",
+   "mark": "0.171486320499",
+   "index": "0.1715475018685",
+   "fundingRate": "100000000000000",
+   "apr": "0.1095",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "233232",
+   "basisBps": "-3.566438964928715335581663361"
+  },
+  {
+   "market": "AVAX-PERP",
+   "mark": "8.9963747413855",
+   "index": "9.000872055845",
+   "fundingRate": "100000000000000",
+   "apr": "0.1095",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "7777.3",
+   "basisBps": "-4.996531926680956528934305770"
+  },
+  {
+   "market": "WLD-PERP",
+   "mark": "0.4359644727265",
+   "index": "0.4363642638515",
+   "fundingRate": "100000000000000",
+   "apr": "0.1095",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "192414",
+   "basisBps": "-9.161866773216188976974989096"
+  },
+  {
+   "market": "PUMP-PERP",
+   "mark": "0.004357336557",
+   "index": "0.004359434071",
+   "fundingRate": "100000000000000",
+   "apr": "0.1095",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "5664600",
+   "basisBps": "-4.811436452160535495342280633"
+  },
+  {
+   "market": "NEAR-PERP",
+   "mark": "4.666699028645",
+   "index": "4.6690728201515",
+   "fundingRate": "490344116762975",
+   "apr": "0.536926807855457625",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "487632.4",
+   "basisBps": "-5.084074714480414267935152324"
+  },
+  {
+   "market": "SOL-PERP",
+   "mark": "101.884508731163",
+   "index": "101.9221099112695",
+   "fundingRate": "342440891134605",
+   "apr": "0.374972775792392475",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "51890.26",
+   "basisBps": "-3.689207389764058223455732698"
+  },
+  {
+   "market": "SUI-PERP",
+   "mark": "0.935541019653",
+   "index": "0.9360032809385",
+   "fundingRate": "100000000000000",
+   "apr": "0.1095",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "288000",
+   "basisBps": "-4.938671636241548928532928144"
+  },
+  {
+   "market": "XRP-PERP",
+   "mark": "1.3269571389105",
+   "index": "1.327294430035",
+   "fundingRate": "100000000000000",
+   "apr": "0.1095",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "838355.5",
+   "basisBps": "-2.541192947604743769499457606"
+  },
+  {
+   "market": "ETH-PERP",
+   "mark": "2350.6689799016515",
+   "index": "2351.6084106955785",
+   "fundingRate": "100000000000000",
+   "apr": "0.1095",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "1073.383",
+   "basisBps": "-3.994843655322389599081394349"
+  },
+  {
+   "market": "ZEC-PERP",
+   "mark": "1314.138132734951",
+   "index": "1314.132938366496",
+   "fundingRate": "100000000000000",
+   "apr": "0.1095",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "113.577",
+   "basisBps": "0.03952696339425709305511551863"
+  },
+  {
+   "market": "HYPE-PERP",
+   "mark": "81.3874946348725",
+   "index": "81.4282996741025",
+   "fundingRate": "-1572174670697753",
+   "apr": "-1.721531264414039535",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "32536.58",
+   "basisBps": "-5.011161892525388997059903752"
+  },
+  {
+   "market": "DOGE-PERP",
+   "mark": "0.0795824510125",
+   "index": "0.079617427141",
+   "fundingRate": "100000000000000",
+   "apr": "0.1095",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "1777960",
+   "basisBps": "-4.393024210397851544912433960"
+  },
+  {
+   "market": "BTC-PERP",
+   "mark": "80847.640752077923",
+   "index": "80879.868802528853",
+   "fundingRate": "1425387556284271",
+   "apr": "1.560799374131276745",
+   "windowSec": 28800,
+   "intervalSec": 3600,
+   "openInterest": "343.62008",
+   "basisBps": "-3.984681346308308138889367190"
+  }
+ ]
+}
